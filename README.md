@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="plugin\src\main\resources\META-INF\pluginIcon.svg" alt="JetBrains Discord Integration" width="200"/>
+  <img src="https://i.imgur.com/bgjYYqo.jpg" alt="JetBrains Discord Integration" width="200"/>
 </p>
 <h1 align="center">JetBrains Discord Integration</h1>
 <p align="center">
