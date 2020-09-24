@@ -1,7 +1,7 @@
 <p align="center">
   <img src="https://i.imgur.com/bgjYYqo.jpg" alt="JetBrains Discord Integration" width="200"/>
 </p>
-<h1 align="center">JetBrains Discord Integration</h1>
+<h1 align="center">JetBrains Shiba Integration</h1>
 <p align="center">
   <a href="https://plugins.jetbrains.com/plugin/10233">
     <img src="https://img.shields.io/jetbrains/plugin/v/10233.svg?style=flat-square&label=Current+Version&colorA=606060&colorB=3CB110" alt="JetBrains Plugin Repository">
