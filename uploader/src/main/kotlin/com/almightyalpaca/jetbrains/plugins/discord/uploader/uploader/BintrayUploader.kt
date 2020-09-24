@@ -59,8 +59,8 @@ suspend fun main() {
         return@newCachedThreadPool thread
     }
 
-    val user = "almightyalpaca"
-    val repository = "JetBrains-Discord-Integration"
+    val user = "bgmp"
+    val repository = "JetBrains-Shiba-Integration"
     val `package` = "Icons"
 
     val key = System.getenv("BINTRAY_KEY")!!

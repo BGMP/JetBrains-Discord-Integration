@@ -37,7 +37,7 @@ class SourceService {
         val location = env.getOrNull(1)
 
         source = when (platform.toLowerCase()) {
-            "bintray" -> BintraySource(location ?: "almightyalpaca/JetBrains-Discord-Integration/Icons")
+            "bintray" -> BintraySource(location ?: "bgmp/JetBrains-Shiba-Integration/Icons")
             "local" -> LocalSource(Paths.get(location ?: throw IllegalStateException("LocalSource needs a path")))
             "classpath" -> ClasspathSource(location ?: "discord")
             else -> ClasspathSource("discord")
