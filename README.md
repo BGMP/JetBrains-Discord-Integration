@@ -23,7 +23,7 @@
 
 ### .... Shiba
 
-Download the [.zip](https://github.com/BGMP/JetBrains-Shiba-Integration/releases/download/1.0/JetBrains-Shiba-Integration-Plugin-1.5.0+6.zip) file of the latest release, then
+Download the [.zip](https://github.com/BGMP/JetBrains-Shiba-Integration/releases/download/1.0/JetBrains-Discord-Integration-Plugin-1.5.0+10.zip) file of the latest release, then
 Open your IDE, go to Settings > Plugins and click the three dots at the upper right-hand corner, and then Install from disk... select the .zip file and restart your IDE.
 
 ### ...from the JetBrains Plugin Repository (this is what you want to do)
