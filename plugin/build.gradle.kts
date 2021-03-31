@@ -16,14 +16,13 @@
 
 @file:Suppress("SuspiciousCollectionReassignment")
 
-import com.github.jengelman.gradle.plugins.shadow.relocation.SimpleRelocator
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jsoup.Jsoup
 
 plugins {
     kotlin("jvm")
     id("org.jetbrains.intellij")
-    id("com.github.johnrengelman.shadow")
     antlr
 }
 
@@ -37,7 +36,7 @@ dependencies {
     val versionJUnit: String by project
     val versionAntlr: String by project
 
-    implementation(project(":icons")) {
+    implementation(project(path = ":icons", configuration = "minimizedJar")) {
         exclude(group = "org.slf4j", module = "slf4j-api")
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
         exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
@@ -56,6 +55,7 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-yaml", version = versionJackson)
 
     antlr("org.antlr", name = "antlr4", version = versionAntlr)
+    implementation("org.antlr", name = "antlr4-runtime", version = versionAntlr)
 
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = versionJUnit)
     testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = versionJUnit)
@@ -69,6 +69,13 @@ sourceSets {
         java {
             srcDir(generatedJavaSourceDir)
         }
+    }
+}
+
+// https://github.com/gradle/gradle/issues/820
+configurations {
+    compile {
+        setExtendsFrom(extendsFrom.filter { it != antlr.get() })
     }
 }
 
@@ -94,6 +101,20 @@ intellij {
 }
 
 tasks {
+    val minimizedJar by registering(ShadowJar::class) {
+        group = "build"
+
+        archiveClassifier.set("minimized")
+
+        from(sourceSets.main.map(org.gradle.api.tasks.SourceSet::getOutput))
+
+        val iconPaths = arrayOf(
+            Regex("""/?discord/images/.*\.png""")
+        )
+
+        transform(PngOptimizingTransformer(128, *iconPaths))
+    }
+
     checkUnusedDependencies {
         ignore("com.jetbrains", "ideaIU")
     }
@@ -103,8 +124,8 @@ tasks {
     }
 
     patchPluginXml {
-        changeNotes(readInfoFile(project.file("CHANGELOG.md")))
-        pluginDescription(readInfoFile(project.file("DESCRIPTION.md")))
+        changeNotes(readInfoFile(project.file("changelog.md")))
+        pluginDescription(readInfoFile(project.file("description.md")))
     }
 
     runIde {
@@ -132,12 +153,19 @@ tasks {
         }
     }
 
+    buildPlugin {
+        archiveBaseName.set(rootProject.name)
+    }
+
+    jarSearchableOptions {
+        archiveBaseName.set(project.name)
+        archiveClassifier.set("options")
+    }
+
     prepareSandbox task@{
-        setLibrariesToIgnore(*configurations.filter { it.isCanBeResolved }.toTypedArray())
+        dependsOn(minimizedJar)
 
-        dependsOn(shadowJar)
-
-        pluginJar(shadowJar.get().archiveFile)
+        pluginJar(minimizedJar.map { it.archiveFile }.get())
     }
 
     build {
@@ -148,40 +176,10 @@ tasks {
         dependsOn(verifyPlugin)
     }
 
-    shadowJar task@{
-        fun prefix(pkg: String, configure: Action<SimpleRelocator>? = null) =
-            relocate(pkg, "${rootProject.group}.dependencies.$pkg", configure)
-
-        mergeServiceFiles()
-
-        prefix("club.minnced.discord.rpc")
-        prefix("com.fasterxml.jackson.annotation")
-        prefix("com.fasterxml.jackson.core")
-        prefix("com.fasterxml.jackson.databind")
-        prefix("com.fasterxml.jackson.dataformat.yaml")
-        prefix("com.jagrosh.discordipc")
-        prefix("javassist")
-        prefix("okhttp3")
-        prefix("okio")
-        prefix("org.apache.commons.io")
-        prefix("org.yaml.snakeyaml")
-
-        val iconPaths = arrayOf(
-            Regex("""/?discord/applications/.*\.png"""),
-            Regex("""/?discord/themes/.*\.png""")
-        )
-
-        transform(PngOptimizingTransformer(128, *iconPaths))
-    }
-
     withType<KotlinCompile> {
         kotlinOptions {
             freeCompilerArgs += "-Xuse-experimental=kotlin.Experimental"
         }
-    }
-
-    withType<AbstractArchiveTask> {
-        archiveBaseName.set("${rootProject.name}-${project.name.capitalize()}")
     }
 
     generateGrammarSource {
@@ -197,7 +195,7 @@ tasks {
 
     processResources {
         filesMatching("/discord/changes.html") {
-            val document = Jsoup.parse(readInfoFile(project.file("CHANGELOG.md")))
+            val document = Jsoup.parse(readInfoFile(project.file("changelog.md")))
             val body = document.getElementsByTag("body")[0]
             val list = body.getElementsByTag("ul")[0]
 
@@ -209,7 +207,7 @@ tasks {
         group = "markdown"
 
         doLast {
-            println(readInfoFile(project.file("CHANGELOG.md")))
+            println(readInfoFile(project.file("changelog.md")))
         }
     }
 
@@ -217,8 +215,12 @@ tasks {
         group = "markdown"
 
         doLast {
-            println(readInfoFile(project.file("DESCRIPTION.md")))
+            println(readInfoFile(project.file("description.md")))
         }
+    }
+
+    check {
+        dependsOn(":uploader:check")
     }
 
     test {

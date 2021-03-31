@@ -44,16 +44,19 @@ object Utils {
             "FileSize" -> sizeAsString(context.fileData?.fileSize)
             "IsTextEditor" -> context.fileData?.editorIsTextEditor.toString()
             "FileIsWritable" -> context.fileData?.fileIsWriteable.toString()
+            "DebuggerActive" -> context.projectData?.debuggerActive.toString()
             else -> null
         }
 
     private fun sizeAsString(size: Int?): String? {
         if (size == null) return null
         if (size < 2 shl 10) return "$size bytes" // 0 .. 2 KiB
-        if (size < 2 shl 20) return "${size.toFloat() / (1 shl 10)} KiB" // 2 KiB .. 2 MiB
-        if (size < 1 shl 30) return "${size.toFloat() / (1 shl 20)} MiB" // 2 MiB .. 1 GiB
-        return "${size.toFloat() / (1 shl 30)} GiB" // 1 GiB ..
+        if (size < 2 shl 20) return "${twoDecimals(size.toDouble() / (1 shl 10))} KiB" // 2 KiB .. 2 MiB
+        if (size < 1 shl 30) return "${twoDecimals(size.toDouble() / (1 shl 20))} MiB" // 2 MiB .. 1 GiB
+        return "${twoDecimals(size.toDouble() / (1 shl 30))} GiB" // 1 GiB ..
     }
+
+    private fun twoDecimals(num: Double) = (Math.floor(num * 100.0) / 100.0)
 
     private fun varNullCheck(context: CustomTemplateContext, varName: String): Boolean = getVarValue(varName, context) != null
 
@@ -130,7 +133,7 @@ object Utils {
                         }
                     }
                 }
-                is TemplateParser.Raw_textContext -> {
+                is TemplateParser.Raw_text_ruleContext -> {
                     val txt = child.text
                     txt.substring(2, txt.length - 2) // take out the first and last 2 characters(the '#"' at the beginning
                     // and '"#' at the end)
@@ -146,7 +149,7 @@ object Utils {
  * Represents a template
  * When executed, it should return a string with all the patterns replaced by values
  */
-class CustomTemplate(template: String?) {
+class CustomTemplate(val template: String) {
     private val rootNode: TemplateParser.Text_evalContext
 
     init {
@@ -180,6 +183,7 @@ private fun Data.asTemplateData(): TemplateData {
                 this.projectName,
                 this.projectDescription,
                 this.vcsBranch,
+                this.debuggerActive,
                 this.fileName,
                 this.fileNameUnique,
                 this.filePath,
@@ -194,7 +198,7 @@ private fun Data.asTemplateData(): TemplateData {
         }
         is Data.Project -> {
             return TemplateData.Project(
-                this.applicationVersion, this.projectName, this.projectDescription, this.vcsBranch
+                this.applicationVersion, this.projectName, this.projectDescription, this.vcsBranch, this.debuggerActive
             )
         }
         is Data.Application -> {
@@ -221,7 +225,8 @@ sealed class TemplateData {
         applicationVersion: String,
         val projectName: String,
         val projectDescription: String,
-        val vcsBranch: String?
+        val vcsBranch: String?,
+        val debuggerActive: Boolean
     ) : Application(applicationVersion)
 
     open class File(
@@ -229,6 +234,7 @@ sealed class TemplateData {
         projectName: String,
         projectDescription: String,
         vcsBranch: String?,
+        debuggerActive: Boolean,
         val fileName: String,
         val fileNameUnique: String,
         val filePath: String,
@@ -244,6 +250,7 @@ sealed class TemplateData {
         applicationVersion,
         projectName,
         projectDescription,
-        vcsBranch
+        vcsBranch,
+        debuggerActive
     )
 }

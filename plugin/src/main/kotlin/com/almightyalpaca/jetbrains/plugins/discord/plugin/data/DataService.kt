@@ -24,12 +24,8 @@ import com.almightyalpaca.jetbrains.plugins.discord.plugin.settings.values.Proje
 import com.almightyalpaca.jetbrains.plugins.discord.plugin.time.timeActive
 import com.almightyalpaca.jetbrains.plugins.discord.plugin.time.timeOpened
 import com.almightyalpaca.jetbrains.plugins.discord.plugin.time.timeService
-import com.almightyalpaca.jetbrains.plugins.discord.plugin.utils.invokeSuspend
-import com.almightyalpaca.jetbrains.plugins.discord.plugin.utils.isVcsIgnored
-import com.almightyalpaca.jetbrains.plugins.discord.plugin.utils.tryOrDefault
-import com.almightyalpaca.jetbrains.plugins.discord.plugin.utils.tryOrNull
+import com.almightyalpaca.jetbrains.plugins.discord.plugin.utils.*
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.ex.ApplicationInfoEx
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.Service
@@ -43,6 +39,7 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessModuleDir
 import com.intellij.openapi.wm.IdeFocusManager
+import com.intellij.xdebugger.XDebuggerManager
 
 val dataService: DataService
     get() = service()
@@ -77,7 +74,7 @@ class DataService {
 
         project = window?.project
 
-        editor = project?.let { invokeSuspend { FileEditorManager.getInstance(project)?.selectedEditor } }
+        editor = project?.let { invokeOnEventThread { FileEditorManager.getInstance(project)?.selectedEditor } }
 
         if (project != null) {
             if (project.settings.show.getValue() <= ProjectShow.DISABLE) {
@@ -88,6 +85,7 @@ class DataService {
                 val projectTimeOpened = project.timeOpened
                 val projectTimeActive = project.timeActive
                 val projectSettings = project.settings
+                val debuggerActive: Boolean = XDebuggerManager.getInstance(project).currentSession != null
 
                 if (editor != null) {
                     val file = editor.file
@@ -99,43 +97,43 @@ class DataService {
                         val fileName = file.name
                         val fileUniqueName = when (DumbService.isDumb(project)) {
                             true -> fileName
-                            false -> ReadAction.compute<String, Exception> {
+                            false -> invokeReadAction {
                                 tryOrDefault(fileName) {
-                                    if (!project.isDisposed) {
-                                        EditorTabPresentationUtil.getUniqueEditorTabTitle(project, file, null)
-                                    } else {
-                                        fileName
-                                    }
+                                    EditorTabPresentationUtil.getUniqueEditorTabTitle(project, file, null)
                                 }
                             }
                         }
+
                         val fileTimeOpened = file.timeOpened
                         val fileTimeActive = file.timeActive
                         val filePath = file.path
                         val fileIsWriteable = file.isWritable
-                        val editorIsTextEditor = editor is TextEditor
+                        val editorIsTextEditor: Boolean
+                        val caretLine: Int
+                        val lineCount: Int
+                        val fileSize: Int
 
-                        val caretLine =
-                            if (editor is TextEditor) // need smart cast here
-                                editor.editor.caretModel.primaryCaret.logicalPosition.line + 1
-                            else 0
-                        val lineCount =
-                            if (editor is TextEditor) // need smart cast here
-                                editor.editor.document.lineCount
-                            else 0
+                        if (editor is TextEditor) {
+                            editorIsTextEditor = true
+                            caretLine = editor.editor.caretModel.primaryCaret.logicalPosition.line + 1
+                            lineCount = editor.editor.document.lineCount
+                            fileSize = editor.editor.document.textLength
+                        } else {
+                            editorIsTextEditor = false
+                            caretLine = 0
+                            lineCount = 0
+                            fileSize = 0
+                        }
 
-                        data class ModuleData(val moduleName: String?, val pathInModule: String);
+                        data class ModuleData(val moduleName: String?, val pathInModule: String)
 
-                        val moduleData = runReadAction {
+                        val moduleData = runReadAction action@{
                             val module = ModuleUtil.findModuleForFile(file, project)
                             val moduleName = module?.name
                             val moduleDirPath = module?.guessModuleDir()
                             val pathInModule = if (moduleDirPath != null) file.path.removePrefix(moduleDirPath.path) else ""
-
-                            return@runReadAction ModuleData(moduleName, pathInModule)
+                            return@action ModuleData(moduleName, pathInModule)
                         }
-
-                        val fileSize = if (editor is TextEditor) editor.editor.document.textLength else 0
 
                         val vcsBranch = VcsInfoExtension.getCurrentVcsBranch(project, file)
 
@@ -153,6 +151,7 @@ class DataService {
                             applicationTimeActive,
                             projectSettings,
                             vcsBranch,
+                            debuggerActive,
                             fileName,
                             fileUniqueName,
                             fileTimeOpened,
@@ -184,7 +183,8 @@ class DataService {
                     projectTimeOpened,
                     projectTimeActive,
                     projectSettings,
-                    vcsBranch
+                    vcsBranch,
+                    debuggerActive
                 )
             }
         }

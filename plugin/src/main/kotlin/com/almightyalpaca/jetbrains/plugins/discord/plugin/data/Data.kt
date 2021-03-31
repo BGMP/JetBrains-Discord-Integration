@@ -55,7 +55,8 @@ sealed class Data {
         val projectTimeOpened: Long,
         val projectTimeActive: Long,
         val projectSettings: ProjectSettings,
-        val vcsBranch: String?
+        val vcsBranch: String?,
+        val debuggerActive: Boolean
     ) : Application(applicationName, applicationVersion, applicationTimeOpened, applicationTimeActive, applicationSettings) {
         override fun toString(): String {
             return "Data.Project(applicationName='$applicationName', applicationVersion='$applicationVersion', applicationTimeOpened=$applicationTimeOpened, applicationTimeActive=$applicationTimeActive, projectName='$projectName', projectDescription='$projectDescription', projectTimeOpened=$projectTimeOpened, projectTimeActive=$projectTimeActive, vcsBranch=$vcsBranch)"
@@ -74,6 +75,7 @@ sealed class Data {
         projectTimeActive: Long,
         projectSettings: ProjectSettings,
         vcsBranch: String?,
+        debuggerActive: Boolean,
         val fileName: String,
         val fileNameUnique: String,
         val fileTimeOpened: Long,
@@ -97,7 +99,8 @@ sealed class Data {
         projectTimeOpened,
         projectTimeActive,
         projectSettings,
-        vcsBranch
+        vcsBranch,
+        debuggerActive
     ), Matcher.Target.Provider {
         /** Path relative to the project directory */
         private val filePathRelative: String by lazy {
@@ -124,7 +127,7 @@ sealed class Data {
         }
 
         override fun toString(): String {
-            return "Data.File(applicationName='$applicationName', applicationVersion='$applicationVersion', applicationTimeOpened=$applicationTimeOpened, applicationTimeActive=$applicationTimeActive, projectName='$projectName', projectDescription='$projectDescription', projectTimeOpened=$projectTimeOpened, projectTimeActive=$projectTimeActive, vcsBranch=$vcsBranch, fileName='$fileName', fileUniqueName='$fileNameUnique', fileTimeOpened=$fileTimeOpened, fileTimeActive=$fileTimeActive, filePath='$filePath', fileIsWriteable=$fileIsWriteable)"
+            return "Data.File(applicationName='$applicationName', applicationVersion='$applicationVersion', applicationTimeOpened=$applicationTimeOpened, applicationTimeActive=$applicationTimeActive, projectName='$projectName', projectDescription='$projectDescription', projectTimeOpened=$projectTimeOpened, projectTimeActive=$projectTimeActive, vcsBranch=$vcsBranch, fileName='$fileName', fileNameUnique='$fileNameUnique', fileTimeOpened=$fileTimeOpened, fileTimeActive=$fileTimeActive, filePath='$filePath', fileIsWriteable=$fileIsWriteable, editorIsTextEditor=$editorIsTextEditor, caretLine=$caretLine, lineCount=$lineCount, moduleName=$moduleName, pathInModule=$pathInModule, fileSize=$fileSize)"
         }
     }
 }

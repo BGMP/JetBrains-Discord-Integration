@@ -79,7 +79,9 @@ subprojects {
             targetCompatibility = "1.8"
             sourceCompatibility = "1.8"
 
-            options.compilerArgs as MutableList<String> += listOf("--release", "8")
+            if (JavaVersion.current() >= JavaVersion.VERSION_1_9) {
+                options.compilerArgs as MutableList<String> += listOf("--release", "8")
+            }
         }
     }
 }
@@ -107,7 +109,7 @@ tasks {
     create<Delete>("clean") {
         group = "build"
 
-        val regex = Regex("""JetBrains-Discord-Integration-Plugin-\d+.\d+.\d+(?:\+\d+)?.zip""")
+        val regex = Regex("""JetBrains-Discord-Integration-\d+.\d+.\d+(?:\+\d+)?.zip""")
 
         Files.newDirectoryStream(project.projectDir.toPath())
             .filter { p -> regex.matches(p.fileName.toString()) }
